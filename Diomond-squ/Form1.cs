@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace Diomond_squ
 {
@@ -17,21 +18,30 @@ namespace Diomond_squ
         {
             InitializeComponent();
             Initialize(array);
-            DoDiamondSquare(array,0.5F);
+            R_start();
+            DoDiamondSquare(array,R);
+        }
+        private float R = 0.5f;
+        private int _MAXINDEX = 512;
+        private int step = 512;
+        private Random rnd = new Random();    
+
+        private void R_start()
+        {
+            AllocConsole();
+            R = float.Parse(Console.ReadLine());
+        }
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            AllocConsole();
         }
 
-        private int _MAXINDEX = 512;
-        private Random rnd = new Random();
-        private const int _HIGHRANGE = 1000;  // max high difference will be this value * Entrophy    
-
-        // prepare work array
         private void Initialize(int[,] W)
         {
-            // Let's fill in corners
-            W[0, 0] = rnd.Next() % _HIGHRANGE;
-            W[_MAXINDEX, 0] = rnd.Next() % _HIGHRANGE;
-            W[0, _MAXINDEX] = rnd.Next() % _HIGHRANGE;
-            W[_MAXINDEX, _MAXINDEX] = rnd.Next() % _HIGHRANGE;
+            W[0, 0] = 100;
+            W[_MAXINDEX-1, 0] = 200;
+            W[0, _MAXINDEX-1] = 300;
+            W[_MAXINDEX - 1, _MAXINDEX - 1] = 100;
         }
         public int r(int range, float S)
         {
@@ -40,16 +50,14 @@ namespace Diomond_squ
         private void DoDiamondSquare(int[,] W, float S)
         {
             int hs, x, y;
-            int A, B, C, D, M, n;
+            int A, B, C, D;
 
-            // Lets iterate through side size until size is too small
-            for (int it = _MAXINDEX; it > 1; it /= 2)
+
+            while (step > 1)
             {
-                hs = it / 2;
-
-                //Midpoints
-                for (y = hs; y < _MAXINDEX; y += it)
-                    for (x = hs; x < _MAXINDEX; x += it)
+                hs = step / 2;
+                for (y = hs; y < _MAXINDEX; y += step)
+                    for (x = hs; x < _MAXINDEX; x += step)
                     {
                         A = W[x - hs, y - hs];
                         B = W[x - hs, y + hs];
@@ -59,22 +67,32 @@ namespace Diomond_squ
                         W[x, y] = ((A + B + C + D) / 4) + r(hs, S);
                     }
 
-                // Going through each square point                
-                for (y = 0; y < _MAXINDEX + 1; y += hs)
-                    for (x = y % it == 0 ? hs : 0; x < _MAXINDEX + 1; x += it) // getting offset of x in function of y 
+                for (int i = 0; i < _MAXINDEX; i += hs)
+                    for (int j = (i + hs) % step; j < _MAXINDEX; j += step)
                     {
-                        M = n = 0; // Sum and denominator
+                        int x1, x2,y1,y2;
+                        x1 = (i - hs) % _MAXINDEX;
+                        x2 = (i + hs) % _MAXINDEX;
+                        y1 = (j - hs) % _MAXINDEX;
+                        y2 = (j + hs) % _MAXINDEX;
 
-                        // this way we can calculate border points
-                        try { M += W[x + hs, y]; n++; } catch (Exception) { }
-                        try { M += W[x - hs, y]; n++; } catch (Exception) { }
-                        try { M += W[x, y + hs]; n++; } catch (Exception) { }
-                        try { M += W[x, y - hs]; n++; } catch (Exception) { }
-
-                        // lets average sum plus random value
-                        W[x, y] = M / n + r(hs, S) / 2;
+                        if (x1< 0)
+                        {
+                            x1 = (_MAXINDEX + x1) % _MAXINDEX;
+                        }
+                        if (y1< 0)
+                        {
+                            y1 = (_MAXINDEX + y1) % _MAXINDEX;
+                        }
+                        A = W[x1, j];
+                        B = W[x2, j];
+                        C = W[i, y1];
+                        D = W[i, y2];
+                        W[i, j] = (A + B + C + D) / 4 + r(hs, S);
                     }
+                step = hs;
             }
+
         }
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
@@ -89,24 +107,24 @@ namespace Diomond_squ
         }
         private Pen Check_color(int a)
         {
-            if (a < 100)
+            if (a < 10)
             {
                 Pen pen = new Pen(Color.Blue);
                 return pen; 
             }
-            if (a < 300)
+            if (a < 25)
             {
-                Pen pen = new Pen(Color.Blue);
+                Pen pen = new Pen(Color.GreenYellow);
                 return pen;
             }
-            if (a < 500)
+            if (a < 50)
             {
-                Pen pen = new Pen(Color.Black);
+                Pen pen = new Pen(Color.Green);
                 return pen;
             }
-            if (a < 700)
+            if (a < 60)
             {
-                Pen pen = new Pen(Color.Tomato);
+                Pen pen = new Pen(Color.DarkGreen);
                 return pen;
             }
             else
@@ -115,5 +133,9 @@ namespace Diomond_squ
                 return pen;
             }
         }
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool AllocConsole();
     }
+
 }
